@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PinCord — publique suas ideias no Discord</title>
+<meta name="description" content="PinCord: salve imagens, organize em pastas e descubra o que sua comunidade está colecionando — tudo dentro do Discord.">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="PinCord — Publique suas Ideias no Discord">
+<meta property="og:description" content="Salve imagens, organize em pastas e descubra o que sua comunidade está colecionando.">
+<meta property="og:image" content="logobot.png">
+<meta name="theme-color" content="#7c3aed">
+
+<!-- Favicon (emoji 📌) -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📌</text></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   VARIÁVEIS
+   ============================================================ */
+:root {
+  --roxo:      #7c3aed;
+  --roxo-2:    #a855f7;
+  --vermelho:  #ef4444;
+  --vermelho-2:#f87171;
+
+  --bg-0: #07040f;
+  --bg-1: #0f0820;
+  --bg-2: #1a0f2e;
+  --card: rgba(30, 18, 48, 0.55);
+  --card-hover: rgba(40, 24, 62, 0.8);
+  --borda: rgba(255, 255, 255, 0.08);
+  --borda-forte: rgba(168, 85, 247, 0.35);
+
+  --texto: #f5f3ff;
+  --texto-fraco: #a89fc0;
+  --texto-mais-fraco: #6b6383;
+
+  --gradiente: linear-gradient(135deg, #7c3aed 0%, #a855f7 45%, #ef4444 100%);
+  --gradiente-suave: linear-gradient(135deg, rgba(124,58,237,.18), rgba(239,68,68,.15));
+
+  --radius: 16px;
+  --radius-sm: 10px;
+  --sombra: 0 20px 60px rgba(124, 58, 237, 0.18);
+  --sombra-forte: 0 30px 80px rgba(124, 58, 237, 0.35);
+  --trans: cubic-bezier(.4, 0, .2, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg-0);
+  color: var(--texto);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Fundo com brilhos */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(900px 600px at 12% -8%, rgba(124,58,237,.28), transparent 60%),
+    radial-gradient(800px 500px at 92% 8%, rgba(239,68,68,.18), transparent 55%),
+    radial-gradient(700px 700px at 50% 110%, rgba(168,85,247,.14), transparent 60%),
+    linear-gradient(180deg, var(--bg-0), var(--bg-1) 40%, var(--bg-0));
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  pointer-events: none;
+}
+
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 14px 0;
+  background: rgba(7, 4, 15, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid transparent;
+  transition: border-color .3s var(--trans), background .3s var(--trans);
+}
+header.rolado {
+  border-bottom-color: var(--borda);
+  background: rgba(7, 4, 15, 0.9);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: -.02em;
+}
+.marca img {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 6px 20px rgba(124,58,237,.4);
+}
+.marca .grad {
+  background: var(--gradiente);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.nav-links {
+  display: flex;
+  gap: 28px;
+  font-size: .92rem;
+  color: var(--texto-fraco);
+  font-weight: 500;
+}
+.nav-links a {
+  transition: color .2s var(--trans);
+  position: relative;
+}
+.nav-links a:hover { color: var(--texto); }
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -6px;
+  height: 2px;
+  background: var(--gradiente);
+  border-radius: 2px;
+  transform: scaleX(0);
+  transition: transform .25s var(--trans);
+}
+.nav-links a:hover::after { transform: scaleX(1); }
+
+.nav-cta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--gradiente);
+  font-weight: 700;
+  font-size: .88rem;
+  color: #fff;
+  transition: transform .2s var(--trans), box-shadow .3s var(--trans);
+  box-shadow: 0 6px 20px rgba(124,58,237,.35);
+}
+.nav-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(124,58,237,.55);
+}
+.nav-cta svg { width: 16px; height: 16px; }
+
+.menu-btn {
+  display: none;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--borda);
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero {
+  padding: 90px 0 100px;
+  position: relative;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(124,58,237,.12);
+  border: 1px solid var(--borda-forte);
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--roxo-2);
+  margin-bottom: 26px;
+}
+.hero-tag .dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 10px #22c55e;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse { 50% { opacity: .35; } }
+
+h1 {
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-weight: 900;
+  letter-spacing: -.035em;
+  line-height: 1.08;
+  margin-bottom: 22px;
+}
+h1 .grad {
+  background: var(--gradiente);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-sub {
+  font-size: 1.12rem;
+  color: var(--texto-fraco);
+  max-width: 540px;
+  margin-bottom: 34px;
+}
+
+.hero-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 30px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px 28px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: .98rem;
+  transition: transform .2s var(--trans), box-shadow .3s var(--trans), background .2s var(--trans);
+  white-space: nowrap;
+}
+.btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+.btn-primario {
+  background: var(--gradiente);
+  color: #fff;
+  box-shadow: 0 12px 34px rgba(124,58,237,.45);
+  position: relative;
+  overflow: hidden;
+}
+.btn-primario::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #a855f7, #ef4444);
+  opacity: 0;
+  transition: opacity .3s var(--trans);
+}
+.btn-primario > * { position: relative; z-index: 1; }
+.btn-primario:hover { transform: translateY(-3px); box-shadow: 0 18px 44px rgba(124,58,237,.65); }
+.btn-primario:hover::before { opacity: 1; }
+
+.btn-secundario {
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--borda);
+  color: var(--texto);
+}
+.btn-secundario:hover {
+  background: rgba(255,255,255,.09);
+  border-color: var(--borda-forte);
+  transform: translateY(-2px);
+}
+
+.btn-copiar {
+  padding: 15px 22px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: .9rem;
+  color: var(--texto-fraco);
+  transition: all .2s var(--trans);
+}
+.btn-copiar:hover {
+  background: rgba(124,58,237,.15);
+  border-color: var(--borda-forte);
+  color: var(--texto);
+}
+
+/* ============================================================
+   MOCKUP / LOGO NO HERO
+   ============================================================ */
+.hero-visual {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.logo-flutuante {
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 1;
+  object-fit: contain;
+  filter: drop-shadow(0 30px 60px rgba(124,58,237,.55));
+  animation: flutuar 5s ease-in-out infinite;
+  z-index: 2;
+}
+@keyframes flutuar {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-18px) rotate(2deg); }
+}
+
+.glow-circulo {
+  position: absolute;
+  width: 110%; height: 110%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168,85,247,.28), transparent 60%);
+  filter: blur(40px);
+  z-index: 1;
+  animation: pulsar 4s ease-in-out infinite;
+}
+@keyframes pulsar {
+  0%, 100% { transform: scale(1); opacity: .7; }
+  50%      { transform: scale(1.1); opacity: 1; }
+}
+
+/* ============================================================
+   SEÇÕES GENÉRICAS
+   ============================================================ */
+section { padding: 90px 0; position: relative; }
+
+.secao-titulo {
+  text-align: center;
+  margin-bottom: 60px;
+}
+.secao-titulo .eyebrow {
+  display: inline-block;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--roxo-2);
+  margin-bottom: 14px;
+}
+.secao-titulo h2 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.15;
+  margin-bottom: 14px;
+}
+.secao-titulo p {
+  color: var(--texto-fraco);
+  max-width: 620px;
+  margin: 0 auto;
+  font-size: 1.02rem;
+}
+
+/* ============================================================
+   COMO FUNCIONA
+   ============================================================ */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.card {
+  padding: 34px 28px;
+  background: var(--card);
+  border: 1px solid var(--borda);
+  border-radius: 20px;
+  transition: all .3s var(--trans);
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gradiente-suave);
+  opacity: 0;
+  transition: opacity .35s var(--trans);
+}
+.card > * { position: relative; z-index: 1; }
+.card:hover {
+  transform: translateY(-6px);
+  border-color: var(--borda-forte);
+  box-shadow: var(--sombra);
+}
+.card:hover::before { opacity: 1; }
+
+.card-icone {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--gradiente);
+  margin-bottom: 22px;
+  box-shadow: 0 10px 26px rgba(124,58,237,.4);
+  color: #fff;
+}
+.card-icone svg { width: 26px; height: 26px; }
+
+.card h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: -.02em;
+}
+.card p {
+  color: var(--texto-fraco);
+  font-size: .96rem;
+}
+
+/* ============================================================
+   PREVIEW / MOCKUP DISCORD
+   ============================================================ */
+.preview-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 22px;
+  background: var(--card);
+  border: 1px solid var(--borda);
+  border-radius: 22px;
+  box-shadow: var(--sombra-forte);
+}
+
+.discord-window {
+  background: #2b2d31;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,.4);
+}
+.discord-topo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #1e1f22;
+  border-bottom: 1px solid rgba(0,0,0,.3);
+}
+.discord-topo .bolinha {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+}
+.discord-topo .b1 { background: #ff5f57; }
+.discord-topo .b2 { background: #febc2e; }
+.discord-topo .b3 { background: #28c840; }
+.discord-topo .titulo {
+  margin-left: 12px;
+  font-size: .82rem;
+  color: #b5bac1;
+  font-weight: 600;
+}
+.discord-corpo {
+  padding: 22px;
+}
+.discord-corpo img {
+  border-radius: 8px;
+  width: 100%;
+}
+
+/* Mockup fallback (se botfoto.png não existir) */
+.mock-msg {
+  display: flex;
+  gap: 14px;
+  padding: 4px 0;
+}
+.mock-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--gradiente);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  color: #fff;
+  font-size: .9rem;
+}
+.mock-msg-corpo { flex: 1; min-width: 0; }
+.mock-msg-cabeca {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.mock-nome {
+  font-weight: 600;
+  color: #fff;
+  font-size: .95rem;
+}
+.mock-bot {
+  background: #5865f2;
+  color: #fff;
+  font-size: .68rem;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+.mock-hora {
+  color: #949ba4;
+  font-size: .76rem;
+}
+.mock-embed {
+  border-left: 4px solid #7c3aed;
+  background: #2b2d31;
+  border-radius: 4px;
+  padding: 14px 16px;
+  max-width: 440px;
+}
+.mock-embed-cabeca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: .82rem;
+  color: #dbdee1;
+}
+.mock-embed-cabeca .avatar-pequeno {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--gradiente);
+}
+.mock-embed-imagem {
+  background: linear-gradient(135deg, #1e1f22, #313338);
+  border-radius: 6px;
+  aspect-ratio: 16/10;
+  display: grid;
+  place-items: center;
+  color: #6d6f78;
+  font-size: .8rem;
+  margin-bottom: 10px;
+  border: 1px dashed rgba(255,255,255,.08);
+}
+.mock-embed-titulo {
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+.mock-embed-desc {
+  color: #b5bac1;
+  font-size: .84rem;
+  line-height: 1.5;
+}
+.mock-embed-footer {
+  color: #949ba4;
+  font-size: .72rem;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+/* Botões Discord fake */
+.mock-botoes {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.mock-btn {
+  padding: 7px 14px;
+  border-radius: 4px;
+  font-size: .78rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.mock-btn-verde { background: #248046; color: #fff; }
+.mock-btn-cinza { background: #4e5058; color: #fff; }
+.mock-btn-link  { background: transparent; border: 1px solid #4e5058; color: #dbdee1; }
+
+/* ============================================================
+   COMANDOS
+   ============================================================ */
+.comandos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.cmd {
+  padding: 20px;
+  background: var(--card);
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  transition: all .25s var(--trans);
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.cmd:hover {
+  border-color: var(--borda-forte);
+  background: var(--card-hover);
+  transform: translateY(-3px);
+}
+.cmd-icone {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(124,58,237,.15);
+  border: 1px solid var(--borda-forte);
+  color: var(--roxo-2);
+}
+.cmd-icone svg { width: 20px; height: 20px; }
+.cmd-info { flex: 1; min-width: 0; }
+.cmd-nome {
+  font-family: 'SF Mono', Monaco, monospace;
+  font-weight: 700;
+  font-size: .92rem;
+  color: var(--roxo-2);
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+.cmd-desc {
+  font-size: .85rem;
+  color: var(--texto-fraco);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   FAQ
+   ============================================================ */
+.faq-wrap {
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faq-item {
+  background: var(--card);
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: all .25s var(--trans);
+}
+.faq-item.aberto {
+  border-color: var(--borda-forte);
+  background: var(--card-hover);
+}
+
+.faq-pergunta {
+  width: 100%;
+  text-align: left;
+  padding: 22px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--texto);
+  transition: color .2s var(--trans);
+}
+.faq-pergunta:hover { color: var(--roxo-2); }
+
+.faq-seta {
+  width: 22px; height: 22px;
+  flex-shrink: 0;
+  transition: transform .3s var(--trans);
+  color: var(--texto-fraco);
+}
+.faq-item.aberto .faq-seta {
+  transform: rotate(180deg);
+  color: var(--roxo-2);
+}
+
+.faq-resposta {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .35s var(--trans), padding .3s var(--trans);
+  padding: 0 24px;
+  color: var(--texto-fraco);
+  font-size: .95rem;
+  line-height: 1.65;
+}
+.faq-item.aberto .faq-resposta {
+  max-height: 500px;
+  padding: 0 24px 24px;
+}
+
+/* ============================================================
+   CTA FINAL
+   ============================================================ */
+.cta-final {
+  padding: 70px 40px;
+  text-align: center;
+  background: var(--gradiente-suave);
+  border: 1px solid var(--borda-forte);
+  border-radius: 28px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--sombra-forte);
+}
+.cta-final::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -10%;
+  width: 60%; height: 200%;
+  background: radial-gradient(circle, rgba(124,58,237,.3), transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+}
+.cta-final::after {
+  content: '';
+  position: absolute;
+  bottom: -50%; right: -10%;
+  width: 60%; height: 200%;
+  background: radial-gradient(circle, rgba(239,68,68,.25), transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+}
+.cta-final > * { position: relative; z-index: 1; }
+.cta-final h2 {
+  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  margin-bottom: 14px;
+}
+.cta-final p {
+  color: var(--texto-fraco);
+  margin-bottom: 30px;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 1.02rem;
+}
+.cta-final .hero-botoes { justify-content: center; }
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer {
+  padding: 50px 0 30px;
+  border-top: 1px solid var(--borda);
+  margin-top: 60px;
+}
+.footer-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 30px;
+}
+.footer-marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+}
+.footer-marca img {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  object-fit: cover;
+}
+.footer-links {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  font-size: .9rem;
+  color: var(--texto-fraco);
+}
+.footer-links a {
+  transition: color .2s var(--trans);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.footer-links a:hover { color: var(--roxo-2); }
+.footer-links svg { width: 15px; height: 15px; }
+
+.footer-base {
+  text-align: center;
+  font-size: .82rem;
+  color: var(--texto-mais-fraco);
+  padding-top: 24px;
+  border-top: 1px solid var(--borda);
+}
+.footer-base .coracao { color: var(--vermelho-2); }
+
+/* ============================================================
+   TOAST (aviso de "copiado")
+   ============================================================ */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  padding: 14px 24px;
+  background: var(--gradiente);
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: .92rem;
+  box-shadow: 0 16px 44px rgba(124,58,237,.55);
+  z-index: 200;
+  transition: transform .4s var(--trans);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+.toast.visivel { transform: translateX(-50%) translateY(0); }
+.toast svg { width: 18px; height: 18px; }
+
+/* ============================================================
+   ANIMAÇÕES DE SCROLL
+   ============================================================ */
+.revelar {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity .7s var(--trans), transform .7s var(--trans);
+}
+.revelar.visivel {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============================================================
+   RESPONSIVO
+   ============================================================ */
+@media (max-width: 900px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 50px; text-align: center; }
+  .hero-sub { margin-left: auto; margin-right: auto; }
+  .hero-botoes { justify-content: center; }
+  .hero-visual { order: -1; }
+  .logo-flutuante { max-width: 260px; }
+  .cards { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+  .nav-cta span { display: none; }
+  .nav-cta { padding: 10px 14px; }
+}
+
+@media (max-width: 520px) {
+  section { padding: 70px 0; }
+  .hero { padding: 60px 0 70px; }
+  .cta-final { padding: 50px 24px; }
+  .btn { padding: 14px 22px; font-size: .92rem; }
+  .preview-wrap { padding: 14px; }
+  .discord-corpo { padding: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header id="header">
+  <div class="wrap nav">
+    <a href="#" class="marca">
+      <img src="logobot.png" alt="PinCord">
+      <span class="grad">PinCord</span>
+    </a>
+
+    <nav class="nav-links">
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#preview">Preview</a>
+      <a href="#comandos">Comandos</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <a href="https://discord.com/oauth2/authorize?client_id=1557377631257763900&permissions=116736&integration_type=0&scope=bot+applications.commands"
+       target="_blank" rel="noopener" class="nav-cta">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+      </svg>
+      <span>Adicionar</span>
+    </a>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="hero-tag">
+        <span class="dot"></span>
+        Bot online 24/7
+      </div>
+
+      <h1>Publique suas <span class="grad">ideias</span> no Discord.</h1>
+
+      <p class="hero-sub">
+        PinCord transforma seu servidor num mural compartilhado: salve imagens, organize em pastas e descubra o que sua comunidade está colecionando — tudo sem sair do Discord.
+      </p>
+
+      <div class="hero-botoes">
+        <a href="https://discord.com/oauth2/authorize?client_id=1557377631257763900&permissions=116736&integration_type=0&scope=bot+applications.commands"
+           target="_blank" rel="noopener" class="btn btn-primario">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+          </svg>
+          Adicionar ao Discord
+        </a>
+
+        <a href="https://discord.gg/NaVeqQd3Sq" target="_blank" rel="noopener" class="btn btn-secundario">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Entrar no servidor
+        </a>
+      </div>
+
+      <button class="btn-copiar" id="btnCopiar">
+        <span id="btnCopiarTexto">📋 Copiar link de convite</span>
+      </button>
+    </div>
+
+    <div class="hero-visual">
+      <div class="glow-circulo"></div>
+      <img src="logobot.png" alt="PinCord" class="logo-flutuante"
+           onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\'font-size:9rem; filter: drop-shadow(0 30px 60px rgba(124,58,237,.55));\'>📌</div>';">
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMO FUNCIONA ============ -->
+<section id="como-funciona">
+  <div class="wrap">
+    <div class="secao-titulo revelar">
+      <span class="eyebrow">Como funciona</span>
+      <h2>Simples como um <span class="grad">pin</span> no mural</h2>
+      <p>Três passos e sua comunidade já está colecionando referências, memes e tudo mais.</p>
+    </div>
+
+    <div class="cards">
+      <div class="card revelar">
+        <div class="card-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <h3>Salve</h3>
+        <p>Use <code>/pin</code> com uma imagem, um título e uma pasta. Pronto, tá no mural.</p>
+      </div>
+
+      <div class="card revelar">
+        <div class="card-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <h3>Organize</h3>
+        <p>Crie pastas por tema: arte, memes, referências, o que quiser. Tudo fica separado e fácil de achar.</p>
+      </div>
+
+      <div class="card revelar">
+        <div class="card-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </div>
+        <h3>Descubra</h3>
+        <p>Veja os pins mais populares, os mais recentes ou explore as pastas dos outros membros.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PREVIEW ============ -->
+<section id="preview">
+  <div class="wrap">
+    <div class="secao-titulo revelar">
+      <span class="eyebrow">Preview</span>
+      <h2>É assim que fica <span class="grad">dentro do Discord</span></h2>
+      <p>Embeds limpos, com autor, tags, contagem de salvamentos e navegação entre pins.</p>
+    </div>
+
+    <div class="preview-wrap revelar">
+      <div class="discord-window">
+        <div class="discord-topo">
+          <span class="bolinha b1"></span>
+          <span class="bolinha b2"></span>
+          <span class="bolinha b3"></span>
+          <span class="titulo">#galeria · PinCord</span>
+        </div>
+        <div class="discord-corpo">
+
+          <!-- Se botfoto.png existir, mostra ela. Se não, mostra o mock. -->
+          <img src="botfoto.png" alt="Exemplo do PinCord no Discord"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+
+          <div class="mock-msg" style="display:none;">
+            <div class="mock-avatar">PC</div>
+            <div class="mock-msg-corpo">
+              <div class="mock-msg-cabeca">
+                <span class="mock-nome">PinCord</span>
+                <span class="mock-bot">APP</span>
+                <span class="mock-hora">hoje às 14:32</span>
+              </div>
+
+              <div class="mock-embed">
+                <div class="mock-embed-cabeca">
+                  <div class="avatar-pequeno"></div>
+                  <span>por Jojola</span>
+                </div>
+                <div class="mock-embed-imagem">
+                  [ sua imagem aparece aqui ]
+                </div>
+                <div class="mock-embed-titulo">📌 Paisagem ao entardecer</div>
+                <div class="mock-embed-desc">
+                  Foto linda que achei no Pinterest — usar como referência pro projeto.<br><br>
+                  <span style="color:#c4b5fd;">#paisagem #sunset #natureza</span>
+                </div>
+                <div class="mock-embed-footer">Pin #42 • paisagens • 3 salvamentos • 1/12</div>
+
+                <div class="mock-botoes">
+                  <div class="mock-btn mock-btn-cinza">Início</div>
+                  <div class="mock-btn mock-btn-cinza">◀</div>
+                  <div class="mock-btn mock-btn-cinza">1 / 12</div>
+                  <div class="mock-btn mock-btn-cinza">▶</div>
+                </div>
+                <div class="mock-botoes">
+                  <div class="mock-btn mock-btn-verde">Salvar</div>
+                  <div class="mock-btn mock-btn-link">Original</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMANDOS ============ -->
+<section id="comandos">
+  <div class="wrap">
+    <div class="secao-titulo revelar">
+      <span class="eyebrow">Comandos</span>
+      <h2>Tudo o que você pode fazer</h2>
+      <p>Slash commands simples, com autocomplete nativo do Discord.</p>
+    </div>
+
+    <div class="comandos-grid">
+      <div class="cmd revelar">
+        <div class="cmd-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <div class="cmd-info">
+          <div class="cmd-nome">/pin</div>
+          <div class="cmd-desc">Salva uma imagem numa pasta com título, descrição e tags.</div>
+        </div>
+      </div>
+
+      <div class="cmd revelar">
+        <div class="cmd-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </div>
+        <div class="cmd-info">
+          <div class="cmd-nome">/inicio</div>
+          <div class="cmd-desc">Menu principal com atalhos para Populares, Recentes, Antigos, Pastas e Meus pins.</div>
+        </div>
+      </div>
+
+      <div class="cmd revelar">
+        <div class="cmd-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div class="cmd-info">
+          <div class="cmd-nome">/pasta criar</div>
+          <div class="cmd-desc">Cria uma nova pasta, com nome e emoji personalizados.</div>
+        </div>
+      </div>
+
+      <div class="cmd revelar">
+        <div class="cmd-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"/>
+            <line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/>
+            <line x1="3" y1="12" x2="3.01" y2="12"/>
+            <line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+        </div>
+        <div class="cmd-info">
+          <div class="cmd-nome">/pasta listar</div>
+          <div class="cmd-desc">Lista todas as pastas do servidor com contagem de pins.</div>
+        </div>
+      </div>
+
+      <div class="cmd revelar">
+        <div class="cmd-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </div>
+        <div class="cmd-info">
+          <div class="cmd-nome">/pasta ver</div>
+          <div class="cmd-desc">Abre uma pasta e navega pin por pin com os botões ◀ ▶.</div>
+        </div>
+      </div>
+
+      <div class="cmd revelar">
+        <div class="cmd-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </div>
+        <div class="cmd-info">
+          <div class="cmd-nome">/search</div>
+          <div class="cmd-desc">Busca pins por título, descrição ou tags em todo o servidor.</div>
+        </div>
+      </div>
+
+      <div class="cmd revelar">
+        <div class="cmd-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 3 21 3 21 8"/>
+            <line x1="4" y1="20" x2="21" y2="3"/>
+            <polyline points="21 16 21 21 16 21"/>
+            <line x1="15" y1="15" x2="21" y2="21"/>
+            <line x1="4" y1="4" x2="9" y2="9"/>
+          </svg>
+        </div>
+        <div class="cmd-info">
+          <div class="cmd-nome">/random</div>
+          <div class="cmd-desc">Mostra um pin aleatório do servidor — bom pra descobrir coisa nova.</div>
+        </div>
+      </div>
+
+      <div class="cmd revelar">
+        <div class="cmd-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div class="cmd-info">
+          <div class="cmd-nome">/mypins</div>
+          <div class="cmd-desc">Mostra todos os pins que você já salvou (só você vê).</div>
+        </div>
+      </div>
+
+      <div class="cmd revelar">
+        <div class="cmd-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6"/>
+            <path d="M14 11v6"/>
+            <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </div>
+        <div class="cmd-info">
+          <div class="cmd-nome">/unpin</div>
+          <div class="cmd-desc">Remove um pin seu pelo ID.</div>
+        </div>
+      </div>
+
+      <div class="cmd revelar">
+        <div class="cmd-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div class="cmd-info">
+          <div class="cmd-nome">/ajuda</div>
+          <div class="cmd-desc">Mostra todos os comandos disponíveis com explicações.</div>
+        </div>
+      </div>
+
+      <div class="cmd revelar">
+        <div class="cmd-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div class="cmd-info">
+          <div class="cmd-nome">Salvar (botão)</div>
+          <div class="cmd-desc">Salva pins de outras pessoas direto numa pasta sua. Incrementa o ranking de populares.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq">
+  <div class="wrap">
+    <div class="secao-titulo revelar">
+      <span class="eyebrow">Dúvidas</span>
+      <h2>Perguntas frequentes</h2>
+      <p>Se ficar qualquer dúvida, é só perguntar lá no servidor de suporte.</p>
+    </div>
+
+    <div class="faq-wrap">
+      <div class="faq-item revelar">
+        <button class="faq-pergunta">
+          Como adiciono o PinCord no meu servidor?
+          <svg class="faq-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="faq-resposta">
+          Clique em <strong>Adicionar ao Discord</strong> em qualquer lugar do site, escolha o servidor onde você é admin e autorize. Pronto — os comandos aparecem automaticamente em segundos.
+        </div>
+      </div>
+
+      <div class="faq-item revelar">
+        <button class="faq-pergunta">
+          O PinCord é gratuito?
+          <svg class="faq-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="faq-resposta">
+          Sim, totalmente gratuito e sem planos pagos. Todas as funcionalidades estão liberadas desde o começo.
+        </div>
+      </div>
+
+      <div class="faq-item revelar">
+        <button class="faq-pergunta">
+          Posso salvar imagens que outros membros postaram?
+          <svg class="faq-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="faq-resposta">
+          Sim! Basta clicar em <strong>Salvar</strong> em qualquer pin e escolher uma pasta sua. O pin é duplicado pra sua coleção e o contador de salvamentos do original sobe — é assim que os <em>Populares</em> são ranqueados.
+        </div>
+      </div>
+
+      <div class="faq-item revelar">
+        <button class="faq-pergunta">
+          Meus dados ficam seguros?
+          <svg class="faq-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="faq-resposta">
+          Sim. O PinCord guarda apenas o necessário: imagens, títulos, descrições e IDs do Discord. Nada de mensagens privadas, e-mails ou qualquer outro dado. Cada servidor tem seus próprios pins, isolados dos outros.
+        </div>
+      </div>
+
+      <div class="faq-item revelar">
+        <button class="faq-pergunta">
+          Posso usar em vários servidores ao mesmo tempo?
+          <svg class="faq-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="faq-resposta">
+          Pode sim. Cada servidor tem suas próprias pastas e pins, então um não interfere no outro. Suas pastas também são separadas por servidor.
+        </div>
+      </div>
+
+      <div class="faq-item revelar">
+        <button class="faq-pergunta">
+          Quero sugerir uma feature ou reportar um bug. Como faço?
+          <svg class="faq-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="faq-resposta">
+          Entra lá no <a href="https://discord.gg/NaVeqQd3Sq" target="_blank" rel="noopener" style="color:var(--roxo-2);font-weight:600;">servidor de suporte</a> e manda sua ideia ou report. Toda sugestão é bem-vinda. 🚀
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA FINAL ============ -->
+<section>
+  <div class="wrap">
+    <div class="cta-final revelar">
+      <h2>Pronto pra transformar seu servidor?</h2>
+      <p>Adicionar o PinCord leva 10 segundos. Depois é só convidar a galera e começar a colecionar.</p>
+
+      <div class="hero-botoes">
+        <a href="https://discord.com/oauth2/authorize?client_id=1557377631257763900&permissions=116736&integration_type=0&scope=bot+applications.commands"
+           target="_blank" rel="noopener" class="btn btn-primario">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+          </svg>
+          Adicionar ao Discord
+        </a>
+
+        <a href="https://discord.gg/NaVeqQd3Sq" target="_blank" rel="noopener" class="btn btn-secundario">
+          Entrar no servidor
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-marca">
+        <img src="logobot.png" alt="PinCord"
+             onerror="this.style.display='none'">
+        <div>
+          <div class="grad" style="background: var(--gradiente); -webkit-background-clip: text; background-clip: text; color: transparent;">PinCord</div>
+          <div style="font-size:.78rem; color: var(--texto-mais-fraco); font-weight: 500;">por Jojola</div>
+        </div>
+      </div>
+
+      <nav class="footer-links">
+        <a href="https://discord.gg/NaVeqQd3Sq" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+          </svg>
+          Servidor de suporte
+        </a>
+        <a href="#comandos">Comandos</a>
+        <a href="#faq">FAQ</a>
+        <a href="#como-funciona">Como funciona</a>
+      </nav>
+    </div>
+
+    <div class="footer-base">
+      Feito com <span class="coracao">♥</span> por <strong>Jojola</strong> · © <span id="ano"></span> PinCord
+    </div>
+  </div>
+</footer>
+
+<!-- ============ TOAST ============ -->
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+  Link copiado!
+</div>
+
+<script>
+/* ============================================================
+   Ano no footer
+   ============================================================ */
+document.getElementById('ano').textContent = new Date().getFullYear();
+
+/* ============================================================
+   Header muda de estilo ao rolar
+   ============================================================ */
+const header = document.getElementById('header');
+window.addEventListener('scroll', () => {
+  header.classList.toggle('rolado', window.scrollY > 20);
+}, { passive: true });
+
+/* ============================================================
+   Copiar link de convite
+   ============================================================ */
+const LINK_CONVITE = 'https://discord.com/oauth2/authorize?client_id=1557377631257763900&permissions=116736&integration_type=0&scope=bot+applications.commands';
+
+const btnCopiar = document.getElementById('btnCopiar');
+const btnCopiarTexto = document.getElementById('btnCopiarTexto');
+const toast = document.getElementById('toast');
+
+btnCopiar.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(LINK_CONVITE);
+    mostrarToast();
+    btnCopiarTexto.textContent = '✅ Copiado!';
+    setTimeout(() => { btnCopiarTexto.textContent = '📋 Copiar link de convite'; }, 2200);
+  } catch {
+    // Fallback pra navegadores antigos
+    const ta = document.createElement('textarea');
+    ta.value = LINK_CONVITE;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    mostrarToast();
+  }
+});
+
+let toastTimer;
+function mostrarToast() {
+  toast.classList.add('visivel');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('visivel'), 2200);
+}
+
+/* ============================================================
+   FAQ accordion
+   ============================================================ */
+document.querySelectorAll('.faq-pergunta').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.parentElement;
+    const aberto = item.classList.contains('aberto');
+
+    // Fecha todos
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('aberto'));
+
+    // Abre o clicado (se não estava aberto)
+    if (!aberto) item.classList.add('aberto');
+  });
+});
+
+/* ============================================================
+   Reveal on scroll
+   ============================================================ */
+const observador = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visivel');
+      observador.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+
+document.querySelectorAll('.revelar').forEach(el => observador.observe(el));
+
+/* ============================================================
+   Parallax leve no logo (só desktop)
+   ============================================================ */
+const logo = document.querySelector('.logo-flutuante');
+if (logo && window.matchMedia('(min-width: 900px)').matches) {
+  window.addEventListener('mousemove', (e) => {
+    const x = (e.clientX / window.innerWidth - 0.5) * 20;
+    const y = (e.clientY / window.innerHeight - 0.5) * 20;
+    logo.style.transform = `translate(${x}px, ${y}px) rotate(${x * 0.15}deg)`;
+  }, { passive: true });
+}
+
+/* ============================================================
+   Marca seção ativa no nav (opcional, sutil)
+   ============================================================ */
+const secoes = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-links a');
+
+const navObs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      navLinks.forEach(a => {
+        a.style.color = a.getAttribute('href') === '#' + id ? 'var(--texto)' : '';
+      });
+    }
+  });
+}, { threshold: 0.4 });
+
+secoes.forEach(s => navObs.observe(s));
+</script>
+
+</body>
+</html>
