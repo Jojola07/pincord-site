@@ -8,7 +8,7 @@
 
 Landing page oficial do [PinCord](https://github.com/Jojola), um bot que transforma qualquer servidor do Discord num Pinterest colaborativo.
 
-[![Site](https://img.shields.io/badge/site-online-7c3aed?style=for-the-badge)](https://jojola.github.io/pincord-site/)
+[![Site](https://img.shields.io/badge/site-online-7c3aed?style=for-the-badge)](https://jojola07.github.io/pincord-site/)
 [![Discord](https://img.shields.io/badge/discord-entrar-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/NaVeqQd3Sq)
 [![License](https://img.shields.io/badge/licença-MIT-ef4444?style=for-the-badge)](#-licença)
 
